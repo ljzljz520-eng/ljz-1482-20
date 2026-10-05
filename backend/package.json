@@ -1,0 +1,47 @@
+{
+  "name": "creation-workbench-backend",
+  "version": "1.4.0",
+  "private": true,
+  "description": "创作工作台后端：真实 API、关系型数据库持久队列、对象存储与长任务执行器",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
+    "start:api": "node dist/index.js api",
+    "start:worker": "node dist/index.js worker",
+    "dev:api": "npm run build && node dist/index.js api",
+    "dev:worker": "npm run build && node dist/index.js worker",
+    "migrate": "node dist/bin/migrate.js up",
+    "migrate:status": "node dist/bin/migrate.js status",
+    "migrate:one": "node dist/bin/migrate.js one",
+    "seed": "node dist/bin/seed.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "selftest": "node scripts/selftest.mjs",
+    "test:logic": "node scripts/selftest.mjs",
+    "test:db": "node scripts/selftest-db.mjs",
+    "test:local": "npm run build && node scripts/local-integration.mjs"
+  },
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/helmet": "^11.1.1",
+    "@fastify/multipart": "^8.3.0",
+    "@fastify/rate-limit": "^9.1.0",
+    "adm-zip": "^0.5.18",
+    "bcryptjs": "^2.4.3",
+    "fastify": "^4.28.1",
+    "jsonwebtoken": "^9.0.2",
+    "minio": "^7.1.3",
+    "pg": "^8.12.0",
+    "pino": "^9.3.2",
+    "pino-pretty": "^11.2.2",
+    "undici": "^6.19.8"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.2.17",
+    "@types/adm-zip": "^0.5.8",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.15",
+    "@types/pg": "^8.11.6",
+    "typescript": "^5.5.4"
+  }
+}

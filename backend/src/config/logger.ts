@@ -1,0 +1,14 @@
+import pino from "pino";
+
+export function createLogger(name: string) {
+  return pino({
+    name,
+    level: process.env.LOG_LEVEL ?? "info",
+    base: undefined,
+    timestamp: pino.stdTimeFunctions.isoTime,
+    transport:
+      process.env.NODE_ENV === "production"
+        ? undefined
+        : { target: "pino-pretty", options: { colorize: false, translateTime: "SYS:standard" } },
+  });
+}

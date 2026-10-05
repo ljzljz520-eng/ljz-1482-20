@@ -1,7 +1,7 @@
 {
-  "name": "park-intro-frontend",
+  "name": "creation-workbench-frontend",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.4.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,16 +9,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "axios": "^1.6.8",
-    "lottie-web": "^5.12.2",
+    "axios": "^1.7.4",
+    "clsx": "^2.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.22.3",
-    "three": "^0.161.0",
-    "video.js": "^8.10.0",
-    "zustand": "^4.5.2",
-    "clsx": "^2.1.0",
-    "react-hot-toast": "^2.4.1"
+    "zustand": "^4.5.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

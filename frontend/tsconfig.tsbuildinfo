@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/index.tsx","./src/vite-env.d.ts","./src/api/client.ts","./src/api/types.ts","./src/components/CheckCard.tsx","./src/components/ErrorBoundary.tsx","./src/components/Layout.tsx","./src/components/Skeleton.tsx","./src/components/StatePanel.tsx","./src/pages/SelfCheck.tsx","./src/pages/Workbench.tsx","./src/store/auth.ts"],"version":"5.9.3"}
