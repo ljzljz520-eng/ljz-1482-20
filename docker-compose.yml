@@ -1,13 +1,174 @@
-version: "3.9"
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-workbench}
+      POSTGRES_USER: ${POSTGRES_USER:-workbench}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-workbench-local-password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workbench} -d ${POSTGRES_DB:-workbench}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+    networks: [workbench-net]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [workbench-net]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-workbench-access-key}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-workbench-secret-key}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+    networks: [workbench-net]
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mc alias set local http://minio:9000 "$${S3_ACCESS_KEY_ID:-workbench-access-key}" "$${S3_SECRET_ACCESS_KEY:-workbench-secret-key}"
+        mc mb --ignore-existing local/$${S3_BUCKET:-creator-workbench}
+        mc anonymous set none local/$${S3_BUCKET:-creator-workbench}
+    environment:
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-workbench-access-key}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-workbench-secret-key}
+      S3_BUCKET: ${S3_BUCKET:-creator-workbench}
+    networks: [workbench-net]
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      APP_ENV: ${APP_ENV:-development}
+      PORT: 3001
+      API_VERSION: ${API_VERSION:-1.0.0}
+      CONTRACT_VERSION: ${CONTRACT_VERSION:-2026.10.1}
+      MIN_CLIENT_VERSION: ${MIN_CLIENT_VERSION:-1.0.0}
+      JWT_SECRET: ${JWT_SECRET:-change-me-minimum-32-random-characters}
+      CALLBACK_SECRET: ${CALLBACK_SECRET:-change-me-minimum-32-random-characters}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://workbench:workbench-local-password@db:5432/workbench?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-creator-workbench}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-workbench-access-key}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-workbench-secret-key}
+      S3_PRESIGN_TTL_SECONDS: ${S3_PRESIGN_TTL_SECONDS:-600}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost:5173,http://localhost:4173}
+      CALLBACK_BASE_URL: ${CALLBACK_BASE_URL:-http://backend:3001}
+      QUEUE_PREFIX: ${QUEUE_PREFIX:-creator-workbench-dev}
+      SEED_TENANT_SLUG: ${SEED_TENANT_SLUG:-demo-studio}
+      SEED_USER_EMAIL: ${SEED_USER_EMAIL:-admin@example.com}
+      SEED_USER_PASSWORD: ${SEED_USER_PASSWORD:-Workbench@2026}
+      SEED_TENANT_NAME: ${SEED_TENANT_NAME:-演示创作工作室}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        node ./node_modules/prisma/build/index.js migrate deploy
+        node dist/seed.js
+        exec node dist/server.js
+    ports:
+      - "3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/api/health"]
+      interval: 8s
+      timeout: 5s
+      retries: 15
+    restart: unless-stopped
+    networks: [workbench-net]
+
+  worker:
+    build: ./backend
+    depends_on:
+      backend:
+        condition: service_started
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_ENV: ${APP_ENV:-development}
+      JWT_SECRET: ${JWT_SECRET:-change-me-minimum-32-random-characters}
+      CALLBACK_SECRET: ${CALLBACK_SECRET:-change-me-minimum-32-random-characters}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://workbench:workbench-local-password@db:5432/workbench?schema=public}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+      S3_PUBLIC_ENDPOINT: ${S3_PUBLIC_ENDPOINT:-http://localhost:9000}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_BUCKET: ${S3_BUCKET:-creator-workbench}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-workbench-access-key}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-workbench-secret-key}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      QUEUE_PREFIX: ${QUEUE_PREFIX:-creator-workbench-dev}
+      JOB_LOCK_TTL_MS: ${JOB_LOCK_TTL_MS:-90000}
+    command: ["node", "dist/worker.js"]
+    restart: unless-stopped
+    networks: [workbench-net]
+
   frontend:
     build: ./frontend
-    container_name: park-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "3000:80"
     restart: unless-stopped
-    networks:
-      - park-net
+    networks: [workbench-net]
+
 networks:
-  park-net:
+  workbench-net:
     driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

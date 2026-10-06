@@ -1,98 +1,57 @@
-import { Link, useLocation } from "react-router-dom";
-import { ReactNode, useMemo } from "react";
-import { useUIStore } from "@/store/uiStore";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { FolderKanban, Activity, LogOut } from "lucide-react";
 import clsx from "clsx";
+import { useAuthStore } from "@/store/authStore";
 
-const navItems = [
-  { path: "/", label: "公园总览" },
-  { path: "/audiovisual", label: "视听体验" },
-  { path: "/timeline", label: "时间轴" }
+const nav = [
+  { to: "/", label: "创作项目", icon: FolderKanban },
+  { to: "/self-check", label: "部署自检", icon: Activity }
 ];
 
-const Layout = ({ children }: { children: ReactNode }) => {
-  const { pathname } = useLocation();
-  const { isMenuOpen, toggleMenu } = useUIStore();
-
-  const activeMatch = useMemo(() => pathname, [pathname]);
+export default function Layout() {
+  const { user, logout } = useAuthStore();
+  const location = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 backdrop-blur bg-white/80 border-b border-slate-200">
-        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="h-10 w-10 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-card flex items-center justify-center text-white font-bold">
-              云溪
-            </span>
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/85 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-white shadow-card">
+              <FolderKanban size={20} />
+            </div>
             <div>
-              <p className="text-sm text-slate-500">城市微度假</p>
-              <h1 className="text-lg font-semibold text-slate-900">云溪公园</h1>
+              <p className="text-xs font-medium text-slate-400">Creator Workbench</p>
+              <h1 className="text-base font-bold text-slate-900">创作工作台</h1>
             </div>
           </Link>
-          <nav className="hidden md:flex items-center gap-2">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={clsx(
-                  "px-3 py-2 rounded-full text-sm font-medium transition hover:bg-primary/10",
-                  activeMatch === item.path
-                    ? "bg-primary/10 text-primary"
-                    : "text-slate-600"
-                )}
-              >
-                {item.label}
-              </Link>
+          <nav className="hidden items-center gap-1 sm:flex">
+            {nav.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to} className={({ isActive }) => clsx(
+                "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition",
+                isActive ? "bg-primary/10 text-primary" : "text-slate-600 hover:bg-slate-100"
+              )}>
+                <Icon size={16} /> {label}
+              </NavLink>
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <button
-              onClick={toggleMenu}
-              className="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-full border border-slate-200 hover:border-primary hover:text-primary transition"
-              aria-label="Toggle menu"
-            >
-              <span className="block h-0.5 w-5 bg-current relative">
-                <span className="block absolute -top-1.5 h-0.5 w-5 bg-current" />
-                <span className="block absolute top-1.5 h-0.5 w-5 bg-current" />
-              </span>
-            </button>
-          </div>
-        </div>
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white/95">
-            <div className="max-w-6xl mx-auto px-4 py-3 grid grid-cols-2 gap-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={clsx(
-                    "px-3 py-2 rounded-xl text-sm font-medium transition hover:bg-primary/10",
-                    activeMatch === item.path
-                      ? "bg-primary/10 text-primary"
-                      : "text-slate-600"
-                  )}
-                  onClick={toggleMenu}
-                >
-                  {item.label}
-                </Link>
-              ))}
+            <div className="hidden text-right md:block">
+              <p className="text-sm font-semibold text-slate-800">{user?.name ?? "未登录"}</p>
+              <p className="max-w-44 truncate text-xs text-slate-400">{user?.email}</p>
             </div>
-          </div>
-        )}
-      </header>
-      <main className="flex-1">
-        {children}
-      </main>
-      <footer className="border-t border-slate-200 bg-white/70 backdrop-blur">
-        <div className="mx-auto max-w-6xl px-4 py-6 flex flex-col md:flex-row items-center justify-between gap-3">
-          <p className="text-sm text-slate-500">© 2026 云溪公园 · 自然与创作共生</p>
-          <div className="flex gap-3 text-sm text-slate-500">
-            <span>开放时间：06:00 - 22:00</span>
-            <span>服务热线：400-123-4567</span>
+            {user && <button onClick={logout} className="grid h-10 w-10 place-items-center rounded-full border border-slate-200 text-slate-500 hover:border-red-200 hover:text-red-500 transition" aria-label="退出登录">
+              <LogOut size={18} />
+            </button>}
           </div>
         </div>
+      </header>
+      <main key={location.pathname} className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <Outlet />
+      </main>
+      <footer className="mx-auto max-w-7xl px-6 py-8 text-center text-xs text-slate-400">
+        预览与正式环境使用独立数据、回调地址、队列前缀和下载授权。
       </footer>
     </div>
   );
-};
-
-export default Layout;
+}

@@ -1,0 +1,10 @@
+node_modules
+dist
+npm-debug.log
+.env
+.env.*
+.git
+Dockerfile
+vercel.json
+.vercel
+.trae.example.json

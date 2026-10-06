@@ -1,41 +1,28 @@
-import { Component, ErrorInfo, ReactNode } from "react";
-import { toast } from "react-hot-toast";
+import { Component, type ReactNode } from "react";
 
-interface Props {
-  children: ReactNode;
-}
+interface Props { children: ReactNode }
+interface State { hasError: boolean; message?: string }
 
-interface State {
-  hasError: boolean;
-}
+export default class ErrorBoundary extends Component<Props, State> {
+  state: State = { hasError: false };
 
-class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(): State {
-    return { hasError: true };
-  }
-
-  componentDidCatch(): void {
-    toast.error("页面出现小问题，已为你记录。");
+  static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, message: error.message };
   }
 
   render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center bg-white">
-          <div className="max-w-md text-center space-y-4">
-            <p className="text-3xl font-semibold text-slate-900">出错了</p>
-            <p className="text-slate-500">请刷新页面或返回首页。</p>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
+    if (!this.state.hasError) return this.props.children;
+    return (
+      <main className="min-h-screen grid place-items-center bg-slate-50 p-6">
+        <section className="max-w-lg w-full rounded-3xl bg-white p-8 shadow-card border border-slate-100 text-center">
+          <p className="text-3xl">🫧</p>
+          <h1 className="mt-4 text-2xl font-bold text-slate-900">页面加载异常</h1>
+          <p className="mt-2 text-slate-500">错误已被隔离，刷新后可继续。若后端不可用，请查看部署自检中的明确原因。</p>
+          <button onClick={() => window.location.reload()} className="mt-6 rounded-full bg-primary px-5 py-2.5 text-white font-semibold hover:bg-blue-700 active:scale-95 transition">
+            刷新页面
+          </button>
+        </section>
+      </main>
+    );
   }
 }
-
-export default ErrorBoundary;

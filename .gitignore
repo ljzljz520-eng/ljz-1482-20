@@ -1,7 +1,6 @@
 node_modules
 pnpm-lock.yaml
 yarn.lock
-package-lock.json
 .dist
 .vercel
 frontend/dist
@@ -9,3 +8,12 @@ backend/dist
 **/.DS_Store
 **/coverage
 **/.turbo
+*.tsbuildinfo
+frontend/vite.config.js
+frontend/vite.config.d.ts
+.env
+.env.local
+.env.*.local
+backend/dist
+backend/prisma/*.db
+coverage
